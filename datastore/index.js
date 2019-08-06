@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
+const Promise = require('bluebird');
 
 var items = {};
 
@@ -10,28 +11,59 @@ var items = {};
 exports.create = (text, callback) => {
   counter.getNextUniqueId((err, counterString) => {
     fs.writeFile(path.join(exports.dataDir, counterString + '.txt'), text, () => {
-      callback(err, {id: counterString, text: text});
+      callback(err, {id: counterString, text: text, todo: {id: counterString, text: text}});
     });
   });
   // items[id] = text;
   // callback(null, { id, text });
 };
 
+// exports.readAll = (callback) => {
+//   fs.readdir(exports.dataDir, (err, files) => {
+//     var newList = [];
+//     if (!files.length) {
+//       callback(err, newList);
+//     } else {
+//       for (var i = 0; i < files.length; i++) {
+//         var index = files[i].indexOf('.');
+//         var name = files[i].substring(0, index);
+//         newList.push({id: name, text: name});
+//       }
+//       callback(err, newList);
+//     }
+//   });
+// };
+
+Promise.promisifyAll(fs);
+
 exports.readAll = (callback) => {
-  fs.readdir(exports.dataDir, (err, files) => {
-    var newList = [];
-    if (!files.length) {
-      callback(err, newList);
-    } else {
-      for (var i = 0; i < files.length; i++) {
-        var index = files[i].indexOf('.');
-        var name = files[i].substring(0, index);
-        newList.push({id: name, text: name});
+  return fs.readdirAsync(exports.dataDir)
+    .then(function(listOfFiles) {
+      var readAllArray = [];
+      for (var i = 0; i < listOfFiles.length; i++) {
+        readAllArray.push(fs.readFileAsync(path.join(exports.dataDir,listOfFiles[i]), 'utf8'))
       }
-      callback(err, newList);
-    }
-  });
+      var resultArray = [];
+      Promise.all(readAllArray).then(function(values) {
+        // console.log('VALUES: ' , values);
+        for (var y = 0; y < values.length; y++) {
+          var tempID = listOfFiles[y].split('.')[0];
+          var obj = {
+            id: tempID,
+            text: values[y]
+          }
+          console.log(obj);
+          resultArray.push(obj);
+        }
+        callback(null, resultArray);
+      })
+    })
+    .catch(function(err) {
+      throw err;
+    })
 };
+
+
 
 
 
