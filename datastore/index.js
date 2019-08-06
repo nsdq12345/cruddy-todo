@@ -33,34 +33,31 @@ exports.readAll = (callback) => {
   });
 };
 
+
+
 exports.readOne = (id, callback) => {
-  var text = items[id];
-  if (!text) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    callback(null, { id, text });
-  }
+  fs.readFile(path.join(exports.dataDir, id + '.txt'), 'utf8', (err, data) => {
+    if (!data) {
+      callback('error file not found', null);
+    } else {
+      var newObj = {id: id, text: data};
+      callback(null, newObj);
+    }
+  });
 };
 
 exports.update = (id, text, callback) => {
-  var item = items[id];
-  if (!item) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    items[id] = text;
-    callback(null, { id, text });
-  }
+  fs.readFile(path.join(exports.dataDir, id + '.txt') , (err, data) => {
+    if (!data) {
+      callback('error id does not exist', null);
+    } else {
+      fs.writeFile(path.join(exports.dataDir, id + '.txt'), text, callback);
+    }
+  });
 };
 
 exports.delete = (id, callback) => {
-  var item = items[id];
-  delete items[id];
-  if (!item) {
-    // report an error if item not found
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    callback();
-  }
+  fs.unlink(path.join(exports.dataDir, id + '.txt'), callback);
 };
 
 // Config+Initialization code -- DO NOT MODIFY /////////////////////////////////
